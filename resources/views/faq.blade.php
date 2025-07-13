@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@section('title', 'Frequently Asked Questions - ArkBridge360')
+
 @section('content')
 <div class="container py-5">
     <div class="row justify-content-center">
@@ -41,7 +43,7 @@
                     </h2>
                     <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
                         <div class="accordion-body">
-                            Payments are handled securely through Paystack. After registration, you'll be redirected to complete your payment.
+                            Payments are handled securely through OPay. After registration, you'll be redirected to complete your payment.
                         </div>
                     </div>
                 </div>

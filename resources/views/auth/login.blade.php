@@ -1,4 +1,7 @@
 @extends('layouts.app')
+
+@section('title', 'Login - ArkBridge360')
+
 @section('content')
 <div class="container py-5">
     <h2 class="mb-4">Login</h2>

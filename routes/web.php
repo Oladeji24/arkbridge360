@@ -25,4 +25,6 @@ Route::get('/faq', function() { return view('faq'); })->name('faq');
 Route::get('/pay', [OpayPaymentController::class, 'showPaymentPage'])->name('opay.pay');
 Route::post('/pay', [OpayPaymentController::class, 'initiatePayment'])->name('opay.init');
 Route::post('/opay/callback', [OpayPaymentController::class, 'handleCallback'])->name('opay.callback');
+Route::get('/payment/failed', function() { return view('payment_failed'); })->name('payment.failed');
+Route::get('/success', function() { return view('success'); })->name('success');
 

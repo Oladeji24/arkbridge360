@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ config('app.name', 'ArtBridge360') }}</title>
+    <title>@yield('title', 'ArkBridge360')</title>
 
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -21,7 +21,7 @@
     <div class="container">
         <a class="navbar-brand d-flex align-items-center text-white" href="{{ route('home') }}">
             <img src="{{ asset('logo.png') }}" alt="Logo" height="40" class="me-2">
-            <span class="fw-bold" style="font-size:1.8rem;letter-spacing:1px;">ArtBridge360</span>
+            <span class="fw-bold" style="font-size:1.8rem;letter-spacing:1px;">ArkBridge360</span>
         </a>
 
         <button class="navbar-toggler bg-light" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -52,7 +52,8 @@
             <a href="#" class="text-white mx-2">Terms</a> |
             <a href="#" class="text-white mx-2">About</a>
         </div>
-        <div class="small">&copy; {{ date('Y') }} ArtBridge360. All rights reserved.</div>
+        <div class="small">&copy; {{ date('Y') }} ArkBridge360. All rights reserved.</div>
+        <div class="small mt-1">Powered by Gopher Crest Global Limited</div>
     </div>
 </footer>
 
