@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\LandingController;
+use App\Http\Controllers\OpayPaymentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -15,6 +16,13 @@ use App\Http\Controllers\LandingController;
 */
 
 Route::get('/', [LandingController::class, 'index'])->name('home');
-Route::get('/register', function() { return view('auth.register'); })->name('register');
+Route::get('/register', [App\Http\Controllers\RegisterController::class, 'showForm'])->name('register');
+Route::post('/register', [App\Http\Controllers\RegisterController::class, 'submitForm'])->name('register.submit');
 Route::get('/login', function() { return view('auth.login'); })->name('login');
 Route::get('/faq', function() { return view('faq'); })->name('faq');
+
+// OPay Payment Routes
+Route::get('/pay', [OpayPaymentController::class, 'showPaymentPage'])->name('opay.pay');
+Route::post('/pay', [OpayPaymentController::class, 'initiatePayment'])->name('opay.init');
+Route::post('/opay/callback', [OpayPaymentController::class, 'handleCallback'])->name('opay.callback');
+
