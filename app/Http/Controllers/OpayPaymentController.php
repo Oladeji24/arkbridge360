@@ -27,7 +27,7 @@ class OpayPaymentController extends Controller
         try {
             // Generate a unique reference
             $reference = uniqid('opay_', true);
-            $amount = 100000; // kobo (₦1,000)
+            $amount = 30000; // kobo (₦300)
             $currency = 'NGN';
             $payType = 'bank_card';
             $callbackUrl = route('opay.callback');
