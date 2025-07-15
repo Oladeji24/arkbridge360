@@ -9,7 +9,7 @@
     <div class="container hero-content">
         <h1 class="display-4 fw-bold">Join ArkBridge360 Today</h1>
         <p class="lead">Connecting dreams, building bridges. Start your journey with us now.</p>
-        <a href="{{ route('register') }}" class="btn btn-warning btn-lg mt-3">Get Started</a>
+        <a href="{{ url('/why-join') }}" class="btn btn-warning btn-lg mt-3">Get Started</a>
     </div>
 </div>
 

@@ -20,6 +20,7 @@ Route::get('/register', [App\Http\Controllers\RegisterController::class, 'showFo
 Route::post('/register', [App\Http\Controllers\RegisterController::class, 'submitForm'])->name('register.submit');
 Route::get('/login', function() { return view('auth.login'); })->name('login');
 Route::get('/faq', function() { return view('faq'); })->name('faq');
+Route::get('/why-join', function() { return view('why-join'); })->name('why-join');
 
 // OPay Payment Routes
 Route::get('/pay', [OpayPaymentController::class, 'showPaymentPage'])->name('opay.pay');
