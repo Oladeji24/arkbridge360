@@ -5,40 +5,80 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\DB;
 
 class AdminController extends Controller
 {
+    /**
+     * Show admin login form
+     */
+    public function showLogin()
+    {
+        return view('admin.login');
+    }
+
+    /**
+     * Process admin login
+     */
+    public function login(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required'
+        ]);
+
+        // Simple hardcoded login for admin
+        if ($request->email === 'info@arkbridge360.com.ng' && $request->password === 'Psa@3080') {
+            Session::put('admin_logged_in', true);
+            return redirect()->route('admin.dashboard');
+        }
+
+        return back()->with('error', 'Invalid credentials');
+    }
+
+    /**
+     * Admin logout
+     */
+    public function logout()
+    {
+        Session::forget('admin_logged_in');
+        return redirect()->route('admin.login');
+    }
+
+    /**
+     * Check if admin is authenticated
+     */
+    private function checkAdminAuth()
+    {
+        if (!Session::has('admin_logged_in')) {
+            return redirect()->route('admin.login')->with('error', 'Please login to access the admin panel');
+        }
+        return true;
+    }
+
     public function dashboard(Request $request)
     {
-        // Advanced role management: Only allow admins and superadmins
-        $email = session('user_email');
-        $userUrl = env('SUPABASE_URL') . "/rest/v1/users?email=eq." . $email;
-        $userResponse = \Illuminate\Support\Facades\Http::withHeaders([
-            'apikey' => env('SUPABASE_API_KEY'),
-            'Authorization' => 'Bearer ' . env('SUPABASE_API_KEY'),
-        ])->get($userUrl);
-        $user = $userResponse->json()[0] ?? null;
-        if (!$user || !in_array($user['type'] ?? '', ['admin', 'superadmin'])) {
-            return redirect()->route('login')->withErrors(['login' => 'Admin access only.']);
+        if (!$this->checkAdminAuth()) {
+            return redirect()->route('admin.login');
         }
-        // Advanced analytics: registration trends, top referrers, payment conversion
-        $url = env('SUPABASE_URL') . '/rest/v1/users?select=*';
-        $response = \Illuminate\Support\Facades\Http::withHeaders([
-            'apikey' => env('SUPABASE_API_KEY'),
-            'Authorization' => 'Bearer ' . env('SUPABASE_API_KEY'),
-        ])->get($url);
-        $users = $response->json();
+
+        // Use local database instead of Supabase
+        $users = DB::table('users')->get()->toArray();
+
         $totalUsers = count($users);
-        $paidUsers = count(array_filter($users, function($u){ return ($u['payment_status'] ?? '') === 'paid'; }));
-        $totalReferrals = array_sum(array_map(function($u){ return $u['referral_count'] ?? 0; }, $users));
+        $paidUsers = count(array_filter($users, function($u){ return ($u->payment_status ?? '') === 'paid'; }));
+        $totalReferrals = array_sum(array_map(function($u){ return $u->referral_count ?? 0; }, $users));
         $conversionRate = $totalUsers ? round(($paidUsers/$totalUsers)*100, 2) : 0;
+
         // Registration trends by day
         $trend = [];
         foreach ($users as $u) {
-            $date = isset($u['created_at']) ? substr($u['created_at'],0,10) : null;
+            $date = isset($u->created_at) ? substr($u->created_at,0,10) : null;
             if ($date) $trend[$date] = ($trend[$date] ?? 0) + 1;
         }
         ksort($trend);
+
         // Top 5 referrers
         $topReferrers = collect($users)->sortByDesc('referral_count')->take(5)->values()->all();
         if ($request->ajax()) {
@@ -106,6 +146,10 @@ class AdminController extends Controller
 
     public function impersonateUser(Request $request)
     {
+        if (!$this->checkAdminAuth()) {
+            return redirect()->route('admin.login');
+        }
+
         // Admin tool: Impersonate another user
         $id = $request->input('id');
         $url = env('SUPABASE_URL') . "/rest/v1/users?id=eq." . $id;
@@ -121,13 +165,80 @@ class AdminController extends Controller
         return back()->withErrors(['impersonate' => 'User not found.']);
     }
 
+    /**
+     * List all manual payments
+     */
+    public function manualPayments()
+    {
+        if (!$this->checkAdminAuth()) {
+            return redirect()->route('admin.login');
+        }
+
+        $payments = DB::table('manual_payments')
+            ->join('users', 'manual_payments.user_id', '=', 'users.id')
+            ->select(
+                'manual_payments.*', 
+                'users.surname', 
+                'users.first_name', 
+                'users.full_name', 
+                'users.type', 
+                'users.email', 
+                'users.whatsapp_number'
+            )
+            ->orderBy('manual_payments.created_at', 'desc')
+            ->get();
+
+        return view('admin.manual-payments', compact('payments'));
+    }
+
+    /**
+     * Update payment status
+     */
+    public function updatePaymentStatus(Request $request, $id)
+    {
+        if (!$this->checkAdminAuth()) {
+            return redirect()->route('admin.login');
+        }
+
+        $request->validate([
+            'status' => 'required|in:pending,verified,rejected',
+        ]);
+
+        DB::table('manual_payments')
+            ->where('id', $id)
+            ->update([
+                'status' => $request->status,
+                'updated_at' => now(),
+            ]);
+
+        // If payment is verified, update user status in Supabase
+        if ($request->status === 'verified') {
+            $userId = DB::table('manual_payments')->where('id', $id)->value('user_id');
+
+            if ($userId) {
+                $url = env('SUPABASE_URL') . "/rest/v1/users?id=eq." . $userId;
+
+                Http::withHeaders([
+                    'apikey' => env('SUPABASE_API_KEY'),
+                    'Authorization' => 'Bearer ' . env('SUPABASE_API_KEY'),
+                    'Content-Type' => 'application/json',
+                ])->patch($url, [
+                    'payment_status' => 'verified',
+                    'updated_at' => now()->toIso8601String(),
+                ]);
+            }
+        }
+
+        return back()->with('success', 'Payment status updated successfully');
+    }
+
     public function sendNotification(Request $request)
     {
         // Send notification to user (email)
         $email = $request->input('email');
         $message = $request->input('message');
         \Illuminate\Support\Facades\Mail::raw($message, function ($m) use ($email) {
-            $m->to($email)->subject('ArtBridge360 Notification');
+            $m->to($email)->subject('ArkBridge360 Notification');
         });
         return back()->with('status', 'Notification sent!');
     }
@@ -171,13 +282,13 @@ class AdminController extends Controller
 
     public function integrationStats(Request $request)
     {
-        // Example: fetch stats from external APIs (Google Analytics, Paystack, etc.)
+        // Example: fetch stats from external APIs (Google Analytics, OPay, etc.)
         $googleStats = [];
-        $paystackStats = [];
+        $opayStats = [];
         // ...fetch and process external API data here...
         return view('admin.integrations', [
             'googleStats' => $googleStats,
-            'paystackStats' => $paystackStats,
+            'opayStats' => $opayStats,
         ]);
     }
 }
